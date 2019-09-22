@@ -1,0 +1,306 @@
+<html>
+<head>
+<title>Тренажер таблиці множення</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body  onload="OnLoadFinished()">
+<div id="main">
+    <p id="Title">Тренажер таблиці множення
+    <p>Перевірка: Множення <input type="checkbox" id="CheckMull" name="CheckMull" checked>
+        Ділення <input type="checkbox" id="CheckDiv" name="CheckDiv">
+    <p id="Digits">На цифру:
+    <p>Кількість завдань:
+          <select id="TestCounts">
+            <option value=10>10</option>
+            <option value=20>20</option>
+            <option value=25>25</option>
+            <option value=50>50</option>
+            <option value=75>75</option>
+            <option value=100>100</option>
+            <option value=100>150</option>
+            <option value=100>200</option>
+          </select>
+    <p>Обмежувати час на відповідь:<input type="checkbox" id="LimitTime" onchange="OnChangeLimitTime()">
+        <select id="TimeLimitValue" style="display: none;">
+        </select>
+    <p><button onclick="BeginTest()">Почати тест</button>
+    <div id="result"></div>
+</div>
+<div id="play" style="display: none;">
+<p id="TestParams">
+<p><div style="display:inline-table"><font size="+4" id="TestValue"></font></div><div style="display:inline-table"><font size="+4" id="CheckVal"></font></div>
+<font size="+4">
+<div id="answerbuttons" style="width: 100%;font-size: inherit;"></div>
+</div>
+</font>
+<script  type="text/javascript">
+var DigitsOnlyOnce=false;
+function AddDigits()
+{
+    if(DigitsOnlyOnce)
+        return;
+    var view=document.getElementById("Digits");
+    var html_value="";
+    for(var i=1;i<=10;i++)
+        html_value+=" "+i+"<input type=\"checkbox\" id=\"Digit"+i+"\" checked>";
+    view.innerHTML+=html_value;
+    document.getElementById("Digit1").checked=false;
+    document.getElementById("Digit10").checked=false;
+    document.getElementById("Title").innerHTML+=" спеціально для 3-Б від Бендяків Євгенія та Дениса";
+    var view=document.getElementById("TimeLimitValue");
+    html_value="";
+    for(var i=1;i<=10;i++)
+        html_value+="<option value="+i+"> "+i+"сек.</option>";
+    view.innerHTML+=html_value;
+    view.value=2;
+    var view=document.getElementById("answerbuttons");
+    html_value="";
+    for(var i=1;i<=9;i++)
+    {
+        html_value+="<button onclick=\"OnAnswerButton("+i+")\" style=\"width:20%;height:20%;font-size: inherit;\">"+i+"</button>";
+        if(i%3==0)
+            html_value+="<br>";
+    }
+    html_value+="<button onclick=\"OnAnswerButton(0)\" style=\"width:20%;height:20%;font-size: inherit;\">0</button>";
+    html_value+="<button onclick=\"OnAnswerButton(-1)\" style=\"width:20%;height:20%;font-size: inherit;\">&lt;-</button>";
+    //html_value+="<button onclick=\"OnAnswerButton(-1)\">&lt;-</button>";
+    view.innerHTML+=html_value;
+    DigitsOnlyOnce=true;
+}
+function OnLoadFinished()
+{
+    AddDigits();
+    OnChangeLimitTime();
+}
+function OnChangeLimitTime()
+{
+    var val=document.getElementById("LimitTime").checked;
+    var view=document.getElementById("TimeLimitValue");
+    if(val)
+    {
+        view.style.display="inline";
+    }
+    else
+    {
+        view.style.display="none";
+    }
+}
+var CurrentTest=0;
+var TotalTest=0;
+var TotalCorrect=0;
+function SetTestProgressValue()
+{
+    document.getElementById("TestParams").innerHTML="ТЕСТ "+CurrentTest+" з "+TotalTest+" правильно "+TotalCorrect;
+}
+var TestArray=new Array();
+var AllowedDigits=new Array();
+var CompareString="";
+function getRandomInt(min, max) 
+{
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min; //Включно з мінімальним та виключаючи максимальне значення 
+}
+function GenerateTests()
+{
+    TestArray=new Array();
+    AllowedDigits=new Array();
+    for(var i=1;i<=10;i++)
+    {   
+        if(document.getElementById("Digit"+i).checked)
+            AllowedDigits.push(i);
+    }
+    //alert("Digits is "+AllowedDigits.toString());
+    var canMull=document.getElementById("CheckMull").checked;
+    var canDiv=document.getElementById("CheckDiv").checked;
+    for(var i=0;i<TotalTest;i++)
+    {
+        var k=new Object();
+        k.IsMult=getRandomInt(0,2)==0?true:false;
+        var v=getRandomInt(0,AllowedDigits.length);
+        k.Base=AllowedDigits[v];
+        k.Other=getRandomInt(2,11);
+        k.Result=k.Base*k.Other;
+        k.Time=0;
+        k.UserResult=0;
+        k.Correct=false;
+        if(k.IsMult && canMull==false)
+        {
+            k.IsMult=false;
+        }
+        if(k.IsMult==false && canDiv==false)
+        {
+            k.IsMult=true;
+        }
+        if(k.IsMult)
+        {
+            k.Test=""+k.Base+"*"+k.Other+"=";
+            k.Check=k.Result.toString();
+        }else
+        {
+            k.Test=""+k.Result+":"+k.Base+"=";
+            k.Check=k.Other.toString();
+        }
+        TestArray.push(k);
+    }
+    /*var S="";
+    for(var i=0;i<TestArray.length;i++)
+    {
+        S+=TestArray[i].Test+" ";
+    }
+    alert(S);
+    */
+}
+var TestTimeBegin;
+var WaitTimer=null;
+function SetTestValue()
+{
+    if(CurrentTest<TestArray.length)
+        document.getElementById("TestValue").innerHTML=TestArray[CurrentTest].Test;
+    else
+        document.getElementById("TestValue").innerHTML="";
+    TestTimeBegin=new Date();
+    CompareString="";
+    document.getElementById("CheckVal").innerHTML=CompareString;
+}
+function OnAnswerButton(v)
+{
+    if(v<0)
+    {
+        if(CompareString.length>0)
+            CompareString=CompareString.substr(0,CompareString.length-1);
+    }
+    else
+    {
+        CompareString+=v.toString();
+    }
+    document.getElementById("CheckVal").innerHTML=CompareString;
+    if(CurrentTest<TestArray.length)
+    {
+        if(CompareString.length==TestArray[CurrentTest].Check.length)
+        {
+            TestArray[CurrentTest].UserResult=CompareString;
+            var T=new Date();
+            TestArray[CurrentTest].Time=Math.abs(T-TestTimeBegin);
+            TestArray[CurrentTest].Correct=(CompareString==TestArray[CurrentTest].Check);
+            TotalCorrect+=TestArray[CurrentTest].Correct?1:0;
+            SwitchToNext();
+        }
+    }
+}
+function SwitchToNext()
+{
+    if(WaitTimer!=null)
+    {
+        clearTimeout(WaitTimer);
+        WaitTimer=null;
+    }
+    CurrentTest++;
+    if(CurrentTest<TestArray.length)
+    {
+        SetTestProgressValue();
+        SetTestValue();
+        if(document.getElementById("LimitTime").checked)
+        {
+            WaitTimer=setTimeout(SwitchToNext,parseInt(document.getElementById("TimeLimitValue").value)*1000);
+        }
+    }else
+    {
+        FillResult();
+        document.getElementById("main").style.display="inline";
+        document.getElementById("play").style.display="none";
+    }
+}
+function MyRound(number, precision) {
+    var factor = Math.pow(10, precision);
+    var tempNumber = number * factor;
+    var roundedTempNumber = Math.round(tempNumber);
+    return roundedTempNumber / factor;
+};
+function FillResult()
+{
+    var k="";
+    k+=" Правильно "+TotalCorrect+" з "+TestArray.length+"<br>";
+    TestArray.sort(function(a,b){return b.Time-a.Time});
+    if(TotalCorrect<TestArray.length)
+    {
+        k+="<div style=\"color:red;\">";
+        for(var i=0;i<TestArray.length;i++)
+        {
+            if(!TestArray[i].Correct)
+            {
+                if(TestArray[i].Time>0)
+                {
+                    k+=TestArray[i].Test+"?"+TestArray[i].UserResult+" має бути "+TestArray[i].Check;
+                    k+=" час "+MyRound(TestArray[i].Time/1000,2)+" сек.";    
+                }else
+                {
+                    k+=TestArray[i].Test+" не встиг, але має бути "+TestArray[i].Check;
+                }
+                k+="<br>";
+            }
+        }
+        k+="</div>";
+    }
+    {
+        k+="<div style=\"color:green;\">";
+        for(var i=0;i<TestArray.length;i++)
+        {
+            if(TestArray[i].Correct)
+            {
+                k+=TestArray[i].Test+TestArray[i].UserResult;
+                if(TestArray[i].Time>0)
+                {
+                    k+=" час "+MyRound(TestArray[i].Time/1000,2)+" сек.";    
+                }
+                k+="<br>";
+            }
+        }
+        k+="</div>";
+    }
+    document.getElementById("result").innerHTML=k;
+}
+function BeginTest()
+{  
+    if(WaitTimer!=null)
+    {
+        clearTimeout(WaitTimer);
+        WaitTimer=null;
+    }
+    CurrentTest=0;
+    TotalTest=document.getElementById("TestCounts").value;
+    TotalCorrect=0;
+    var canMull=document.getElementById("CheckMull").checked;
+    var canDiv=document.getElementById("CheckDiv").checked;
+    var canDigits=0;
+    for(var i=1;i<=10;i++)
+    {   
+        if(document.getElementById("Digit"+i).checked)
+            canDigits++;
+    }
+    if(!canDiv && !canMull)
+    {
+        alert("Потрібно обрати хочаб одну дію ділення чи множення, або обидві");
+        return;
+    }
+    if(canDigits==0)
+    {
+        alert("Потрібно обрати хочаб одну цифру на яку буде сгенеровано тести");
+        return;
+    }
+    document.getElementById("main").style.display="none";
+    document.getElementById("play").style.display="inline";
+    document.getElementById("result").innerHTML="";
+    SetTestProgressValue();
+    GenerateTests();
+    SetTestValue();
+    if(document.getElementById("LimitTime").checked)
+    {
+        //alert(parseInt(document.getElementById("TimeLimitValue").value)*1000);
+        WaitTimer=setTimeout(SwitchToNext,parseInt(document.getElementById("TimeLimitValue").value)*1000);
+    }
+}
+</script>
+</body>
+</html>
